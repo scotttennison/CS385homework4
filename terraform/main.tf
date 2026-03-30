@@ -34,38 +34,7 @@ resource "aws_instance" "app_server" {
 
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-user_data = base64encode(<<-EOF
-    #!/bin/bash
-    set -e
-    yum update -y
-    yum install -y python3 python3-pip git
-
-    pip3 install flask gunicorn
-
-    cd /home/ec2-user
-    git clone https://github.com/scotttennison/CS385homework4.git app
-    chown -R ec2-user:ec2-user /home/ec2-user/app
-
-    sudo tee /etc/systemd/system/flaskapp.service > /dev/null <<SERVICE
-[Unit]
-Description=Flask App
-After=network.target
-
-[Service]
-User=ec2-user
-WorkingDirectory=/home/ec2-user/app
-ExecStart=/usr/local/bin/gunicorn --bind 0.0.0.0:5000 app:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-
-    systemctl daemon-reload
-    systemctl enable flaskapp
-    systemctl start flaskapp
-  EOF
-  )
+  user_data = file("${path.module}/userdata.sh")
 
   tags = {
     Name = "CS385-App-Server"
