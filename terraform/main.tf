@@ -41,12 +41,18 @@ resource "aws_instance" "app_server" {
 
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  user_data = <<-EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y python3 pip3
-    pip3 install flask gunicorn
-  EOF
+user_data = <<-EOF
+  #!/bin/bash
+  yum update -y
+  yum install -y python3 python3-pip git
+  pip3 install flask gunicorn
+
+  cd /home/ec2-user
+  git clone https://github.com/scotttennison/CS385homework4.git app
+  cd app
+
+  gunicorn --bind 0.0.0.0:5000 --daemon app:app
+EOF
 
   tags = {
     Name = "CS385-App-Server"
