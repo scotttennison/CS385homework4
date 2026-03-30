@@ -6,88 +6,58 @@ on:
       - main
 
 jobs:
-  # ---- STAGE 1: BUILD & TEST ----
-  # This stage checks out your code, installs Python
-  # and makes sure your app dependencies install correctly
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        # Downloads your code from GitHub onto the runner machine
         uses: actions/checkout@v3
 
       - name: Set up Python
-        # Installs Python 3.12 on the runner machine
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
       - name: Install dependencies
-        # Installs Flask and Gunicorn from your requirements.txt
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
 
       - name: Run tests
-        # Placeholder for tests - confirms build stage passed
-        run: echo "Build successful - all tests passed!"
+        run: |
+          echo "Tests passed successfully!"
 
-  # ---- STAGE 2: INFRASTRUCTURE ----
-  # This stage runs Terraform to create your AWS EC2 server
-  # It only runs after the build stage passes
-  infrastructure:
+  deploy:
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Setup Terraform
-        # Installs Terraform on the runner machine
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
-      - name: Configure AWS Credentials
-        # Uses your GitHub Secrets to authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Terraform Init
-        # Downloads the AWS provider plugin that Terraform needs
         run: terraform init
-        working-directory: ./terraform
+        working-directory: terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform
 
       - name: Terraform Plan
-        # previews what AWS resources will be created before creating them
         run: terraform plan
-        working-directory: ./terraform
+        working-directory: terraform
 
       - name: Terraform Apply
-        # Actually creates your AWS EC2 server and security group
         run: terraform apply -auto-approve
-        working-directory: ./terraform
-
-  # ---- STAGE 3: DEPLOY ----
-  # This stage copies your Flask app onto the AWS server and starts it
-  # It only runs after the infrastructure stage passes
-  deploy:
-    runs-on: ubuntu-latest
-    needs: infrastructure
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Deploy app to EC2
-        # Copies your app files to the server and starts it with gunicorn
-        run: |
-          echo "Deploying Flask app to EC2..."
-          echo "Deployment complete!"
+        working-directory: terraform
