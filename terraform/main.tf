@@ -34,7 +34,7 @@ resource "aws_instance" "app_server" {
 
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  user_data = <<-EOF
+user_data = <<-EOF
     #!/bin/bash
     yum update -y
     yum install -y python3 python3-pip git
@@ -45,20 +45,16 @@ resource "aws_instance" "app_server" {
     git clone https://github.com/scotttennison/CS385homework4.git app
     cd app
 
-    cat > /etc/systemd/system/flaskapp.service <<SERVICE
-    [Unit]
-    Description=Flask App
-    After=network.target
-
-    [Service]
-    User=ec2-user
-    WorkingDirectory=/home/ec2-user/app
-    ExecStart=/usr/local/bin/gunicorn --bind 0.0.0.0:5000 app:app
-    Restart=always
-
-    [Install]
-    WantedBy=multi-user.target
-    SERVICE
+    echo "[Unit]" > /etc/systemd/system/flaskapp.service
+    echo "Description=Flask App" >> /etc/systemd/system/flaskapp.service
+    echo "After=network.target" >> /etc/systemd/system/flaskapp.service
+    echo "[Service]" >> /etc/systemd/system/flaskapp.service
+    echo "User=ec2-user" >> /etc/systemd/system/flaskapp.service
+    echo "WorkingDirectory=/home/ec2-user/app" >> /etc/systemd/system/flaskapp.service
+    echo "ExecStart=/usr/local/bin/gunicorn --bind 0.0.0.0:5000 app:app" >> /etc/systemd/system/flaskapp.service
+    echo "Restart=always" >> /etc/systemd/system/flaskapp.service
+    echo "[Install]" >> /etc/systemd/system/flaskapp.service
+    echo "WantedBy=multi-user.target" >> /etc/systemd/system/flaskapp.service
 
     systemctl daemon-reload
     systemctl enable flaskapp
